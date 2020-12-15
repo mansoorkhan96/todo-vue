@@ -2,18 +2,11 @@
     <div>
         <input type="text" class="todo-input" placeholder="What needs to be done.." v-model="newTodo" @keyup.enter="addTodo">
         <transition-group name="fade" enter-active-class="animated fadeInUp" leave-active-class="animated fadeOutDown">
-            <div v-for="(todo, index) in todosFiltered" :key="todo.id" class="todo-item">
-                <div class="todo-item-left">
-                    <input type="checkbox" v-model="todo.completed">
-                    <div v-if="! todo.editing" @dblclick="editTodo(todo)" class="todo-item-label" :class="{ completed : todo.completed }">{{ todo.title }}</div>
-                    <input v-focus @blur="finishEdit(todo)" @keyup.enter="finishEdit(todo)" @keyup.esc="cancelEdit(todo)" v-else class="todo-item-edit" type="text" v-model="todo.title">
-                </div>
-                <div class="remove-item" @click="removeTodo(index)">
-                    &times;
-                </div>
-            </div>
+            <todo-item v-for="(todo, index) in todosFiltered" :key="todo.id" :todo="todo" :index="index" :checkAll="!anyRemaining" @removedTodo="removeTodo" @finishedEdit="finishedEdit">
+
+            </todo-item>
         </transition-group>
-        
+
         <div class="extra-container">
             <div>
                 <label for="">
@@ -23,7 +16,7 @@
             </div>
             <div>{{ remaining }} items left</div>
         </div>
-        
+
         <div class="extra-container">
             <div>
                 <button :class="{ active: filter == 'all' }" @click="filter = 'all'">All</button>
@@ -41,8 +34,14 @@
 </template>
 
 <script>
+import TodoItem from './TodoItem'
+
 export default {
     name: 'todo-list',
+    components: {
+        TodoItem,
+    },
+
     data() {
         return {
             msg: 'Welcome to todo list.',
@@ -88,14 +87,6 @@ export default {
         }
     },
 
-    directives: {
-        focus: {
-            inserted: function(el) {
-                el.focus()
-            }
-        }
-    },
-
     methods: {
         addTodo() {
             if(this.newTodo.trim().length == 0) {
@@ -117,28 +108,14 @@ export default {
             this.todos.splice(index, 1)
         },
 
-        editTodo(todo) {
-            this.beforeEditCache = todo.title
-            todo.editing = true
-        },
-
-        cancelEdit(todo) {
-            todo.title = this.beforeEditCache;
-            todo.editing = false
-        },
-
-        finishEdit(todo) {
-            if(todo.title.trim() == '') {
-                todo.title = this.beforeEditCache
-            }
-
-            todo.editing = false
-        },
         checkAllTodos() {
             this.todos.forEach((todo) => todo.completed = event.target.checked)
         },
         clearCompleted() {
             this.todos = this.todos.filter(todo => !todo.completed)
+        },
+        finishedEdit(data) {
+            this.todos.splice(data.index, 1, data.todo)
         }
     }
 }
