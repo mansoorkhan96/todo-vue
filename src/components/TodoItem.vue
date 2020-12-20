@@ -5,8 +5,11 @@
             <div v-if="! editing" @dblclick="editTodo" class="todo-item-label" :class="{ completed : completed }">{{ title }}</div>
             <input v-focus @blur="finishEdit" @keyup.enter="finishEdit" @keyup.esc="cancelEdit" v-else class="todo-item-edit" type="text" v-model="title">
         </div>
-        <div class="remove-item" @click="removeTodo(index)">
-            &times;
+        <div>
+            <button @click="pluralize">Plural</button>
+            <span class="remove-item" @click="removeTodo(id)">
+                &times;
+            </span>
         </div>
     </div>
 </template>
@@ -37,6 +40,12 @@ export default {
             beforeEditCache: '',
         }
     },
+    created() {
+        eventBus.$on('pluralize', this.handlePluralize)
+    },
+    beforeDestroy() {
+        eventBus.$off('pluralize', this.handlePluralize)
+    },
     watch: {
         checkAll() {
             this.completed = this.checkAll ? true : this.todo.completed
@@ -50,8 +59,8 @@ export default {
         }
     },
     methods: {
-        removeTodo(index) {
-            this.$emit('removedTodo', index)
+        removeTodo(id) {
+            this.$store.dispatch('removeTodo', id)
         },
         editTodo() {
             this.beforeEditCache = this.title
@@ -62,20 +71,32 @@ export default {
                 this.title = this.beforeEditCache
             }
             this.editing = false
-            this.$emit('finishedEdit', {
-                index: this.index,
-                todo: {
-                    id: this.id,
-                    title: this.title,
-                    completed: this.completed,
-                    editing: this.editing,
-                }
+
+            this.$store.dispatch('updateTodo', {
+                id: this.id,
+                title: this.title,
+                completed: this.completed,
+                editing: this.editing,
             })
         },
         cancelEdit() {
             this.title = this.beforeEditCache
             this.editing = false
-        }
+        },
+        pluralize() {
+            eventBus.$emit('pluralize')
+        },
+        handlePluralize() {
+            this.title = this.title + 's'
+
+            const index = this.$store.state.todos.findIndex(item => item.id == this.id)
+            this.$store.state.todos.splice(index, 1, {
+                id: this.id,
+                title: this.title,
+                completed: this.completed,
+                editing: this.editing,
+            })
+        },
     }
 }
 </script>
